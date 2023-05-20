@@ -8,8 +8,6 @@ const createStory = asyncHandler(async (req, res) => {
   const story = { userId, isPublic };
   if (text) {
     story["text"] = text;
-    const createdStory = await Story.create(story);
-    return res.status(201).json({ msg: "story created successfully" });
   }
   if (req.files.video) {
     const video = req.files.video[0].filename;

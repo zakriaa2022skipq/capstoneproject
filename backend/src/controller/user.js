@@ -10,7 +10,6 @@ const registerUser = asyncHandler(async (req, res) => {
     throw new Error("User with this username already exists");
   }
   const hashedPassword = await hashPassword(password);
-  console.log(req.file, "file");
   let profilepic = null;
   if (req.file) {
     profilepic = req.file.filename;

@@ -8,7 +8,7 @@ const router = express.Router();
 router
   .route("/login")
   .post(loginUserSchema, passport.authenticate("local"), (req, res) =>
-    res.sendStatus(200)
+    res.status(200).json({ msg: "login successfull" })
   );
 
 router.route("/logout").post(authMiddleware, logoutUser);

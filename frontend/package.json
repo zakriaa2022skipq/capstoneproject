@@ -10,8 +10,22 @@
     "lint": "eslint . --ext .ts,.tsx"
   },
   "dependencies": {
+    "@emotion/react": "^11.10.8",
+    "@emotion/styled": "^11.10.8",
+    "@mui/lab": "^5.0.0-alpha.129",
+    "@mui/material": "^5.12.3",
+    "@reduxjs/toolkit": "^1.9.5",
+    "axios": "^1.4.0",
+    "formik": "^2.2.9",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "react-files": "^3.0.0",
+    "react-icons": "^4.8.0",
+    "react-intersection-observer": "^9.4.3",
+    "react-query": "^3.39.3",
+    "react-redux": "^8.0.5",
+    "react-router-dom": "^6.11.0",
+    "yup": "^1.1.1"
   },
   "devDependencies": {
     "@types/react": "^18.0.28",

@@ -26,7 +26,8 @@ passport.use(
       }
       const isPasswordValid = await verifyPassword(password, user.password);
       if (!isPasswordValid) {
-        done(null, null);
+        req.statusCode = 401;
+        done(new Error("Invlid credentials"));
       } else {
         done(null, user);
       }

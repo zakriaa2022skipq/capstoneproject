@@ -9,21 +9,20 @@ const {
   createComment,
   updateComment,
   deleteComment,
+  storyComments,
 } = require("../controller/comment");
 const {
   getTrendingStories,
   getEngagementStories,
   getLeaderboard,
   getTimelineStories,
+  getAllUserStories,
 } = require("../controller/trending");
 const authMiddleware = require("../middleware/auth");
 const { uploadStory } = require("../middleware/fileupload");
 
 const router = express.Router();
-router.route("/all").get(authMiddleware, (req, res) => {
-  console.log(req.user);
-  return res.sendStatus(200);
-});
+router.route("/all").get(authMiddleware, getAllUserStories);
 router.route("/").post(
   authMiddleware,
   uploadStory.fields([
@@ -46,7 +45,10 @@ router
 
 router.route("/:storyId/upvote").patch(authMiddleware, upvoteStory);
 router.route("/:storyId/downvote").patch(authMiddleware, downvoteStory);
-router.route("/:storyId/comment").put(authMiddleware, createComment);
+router
+  .route("/:storyId/comment")
+  .get(authMiddleware, storyComments)
+  .put(authMiddleware, createComment);
 router.route("/:storyId/comment/:commentId").put(authMiddleware, updateComment);
 router
   .route("/:storyId/comment/:commentId")
