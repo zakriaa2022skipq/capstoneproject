@@ -16,7 +16,7 @@ import * as Yup from 'yup';
 import { useFormik } from 'formik';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import { useMutation } from 'react-query';
+import { useMutation, useQuery } from 'react-query';
 import axios from 'axios';
 import { useDispatch } from 'react-redux';
 import Navbar from '../components/Navbar';
@@ -34,11 +34,9 @@ function EditStory() {
     sizeReadable: string;
   }
   const { state } = useLocation();
-  const [storyStatus, setStoryStatus] = useState(state.story.isPublic);
   const [showAlert, setShowAlert] = useState(false);
   const [errMessage, setErrMessage] = useState('');
-  const dispatch = useDispatch();
-  const [mediaFile, setMediaFile] = useState<File | undefined>(undefined);
+  const [mediaFile, setMediaFile] = useState<File | undefined>();
   const [fileError, setFileError] = useState({ show: false, message: '' });
   const createStorySchema = Yup.object().shape({
     text: Yup.string().max(1000, 'Too Long!'),
@@ -46,23 +44,28 @@ function EditStory() {
   const fileErrorHandler = (error: { message: string }, file) => {
     setFileError({ show: true, message: error.message });
   };
+
   const navigate = useNavigate();
-  const createStoryMutation = useMutation((formData) =>
-    axios.post('http://localhost:5000/api/v1/story', formData, {
+  const editStoryMutation = useMutation((formData) =>
+    axios.patch(`http://localhost:5000/api/v1/story/${state.story._id}`, formData, {
       withCredentials: true,
       headers: { 'Content-Type': 'multipart/form-data' },
     }),
   );
+  const deleteStoryMutation = useMutation(() =>
+    axios.delete(`http://localhost:5000/api/v1/story/${state.story._id}`, {
+      withCredentials: true,
+    }),
+  );
   const handleSubmit = async (values) => {
     const formData = new FormData();
-    if (mediaFile === undefined && values.text === '') {
+    if (mediaFile === undefined && values.text === '' && !state.story.image && !state.story.video) {
       setShowAlert(true);
       setErrMessage('Empty story cannot be created');
       return;
     }
-    if (values.text !== '') {
-      formData.append('text', values.text);
-    }
+    formData.append('text', values.text);
+    formData.append('isPublic', values.storyStatus);
     if (mediaFile !== undefined) {
       if (mediaFile.type.match(/^image\/.*/) != null) {
         formData.append('image', new Blob([mediaFile], { type: mediaFile.type }), mediaFile.name || 'file');
@@ -70,8 +73,12 @@ function EditStory() {
         formData.append('video', new Blob([mediaFile], { type: mediaFile.type }), mediaFile.name || 'file');
       }
     }
-    createStoryMutation.mutate(formData);
+    editStoryMutation.mutate(formData);
   };
+  const handleDelete = async () => {
+    deleteStoryMutation.mutate();
+  };
+
   const fileChangeHandler = (file: File[]) => {
     if (file !== undefined && file.length !== 0) {
       setMediaFile(file[0]);
@@ -81,22 +88,31 @@ function EditStory() {
     }
   };
   useEffect(() => {
-    if (createStoryMutation.isSuccess) {
-      navigate('/home');
+    if (editStoryMutation.isSuccess || deleteStoryMutation.isSuccess) {
+      navigate('/stories/me');
     }
-  }, [createStoryMutation.isSuccess, navigate]);
+  }, [editStoryMutation.isSuccess, deleteStoryMutation.isSuccess, navigate]);
 
   useEffect(() => {
-    if (createStoryMutation.isError) {
+    if (editStoryMutation.isError) {
       setShowAlert(true);
-      if (typeof createStoryMutation.error === 'object') {
-        setErrMessage(createStoryMutation.error?.response?.data);
+      if (typeof editStoryMutation.error === 'object') {
+        setErrMessage(editStoryMutation.error?.response?.data);
       }
     }
-  }, [createStoryMutation.isError, createStoryMutation.error]);
+  }, [editStoryMutation.isError, editStoryMutation.error, deleteStoryMutation.isError, deleteStoryMutation.error]);
+  useEffect(() => {
+    if (deleteStoryMutation.isError) {
+      setShowAlert(true);
+      if (typeof deleteStoryMutation.error === 'object') {
+        setErrMessage(deleteStoryMutation.error?.response?.data);
+      }
+    }
+  }, [deleteStoryMutation.isError, deleteStoryMutation.error]);
   const formik = useFormik({
     initialValues: {
-      text: '',
+      text: state.story.text ?? '',
+      storyStatus: state.story.isPublic,
     },
     validationSchema: createStorySchema,
     onSubmit: handleSubmit,
@@ -119,7 +135,8 @@ function EditStory() {
             </Alert>
           )}
           <CardContent>
-            <Typography fontSize="40px">Create Story</Typography>
+            <Typography fontSize="40px">Edit Story</Typography>
+
             <Box
               component="form"
               onSubmit={formik.handleSubmit}
@@ -178,24 +195,26 @@ function EditStory() {
               </Box>
               <FormControlLabel
                 sx={{ color: 'text.primary' }}
-                control={
-                  <Switch
-                    checked={storyStatus}
-                    onChange={() => {
-                      setStoryStatus(!storyStatus);
-                    }}
-                  />
-                }
+                control={<Switch checked={formik.values.storyStatus} />}
                 label="Public"
+                name="storyStatus"
+                onChange={formik.handleChange}
               />
-              <Button variant="contained">Delete Story</Button>
               <LoadingButton
-                loading={createStoryMutation.isLoading}
+                loading={deleteStoryMutation.isLoading}
+                onClick={handleDelete}
+                type="button"
+                variant="contained"
+              >
+                <span>Delete Story</span>
+              </LoadingButton>
+              <LoadingButton
+                loading={editStoryMutation.isLoading}
                 type="submit"
                 variant="outlined"
                 disabled={formik.isSubmitting}
               >
-                <span> Submit</span>
+                <span>Edit</span>
               </LoadingButton>
             </Box>
           </CardContent>

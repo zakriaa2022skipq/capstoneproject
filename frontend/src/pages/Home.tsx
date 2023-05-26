@@ -1,5 +1,5 @@
 import { Box, IconButton, LinearProgress, Typography } from '@mui/material';
-import { useInfiniteQuery } from 'react-query';
+import { useInfiniteQuery, useMutation } from 'react-query';
 import { useInView } from 'react-intersection-observer';
 import { BsFillGridFill } from 'react-icons/bs';
 import { RiListUnordered } from 'react-icons/ri';
@@ -29,6 +29,12 @@ function Home() {
         return nextPage;
       },
     });
+  const upvoteStory = useMutation((storyId) =>
+    axios({ url: `http://localhost:5000/api/v1/story/${storyId}/upvote`, withCredentials: true, method: 'PATCH' }),
+  );
+  const downvoteStory = useMutation((storyId) =>
+    axios({ url: `http://localhost:5000/api/v1/story/${storyId}/downvote`, withCredentials: true, method: 'PATCH' }),
+  );
 
   useEffect(() => {
     refetch();
@@ -40,13 +46,28 @@ function Home() {
   }, [inView, fetchNextPage, hasNextPage]);
   const stories =
     isSuccess &&
-    data.pages.map((page) =>
+    data.pages.map((page, pageIndex) =>
       page.map((story: Story, index: number) => (
         <Box key={story._id}>
           {index + 1 === page.length ? (
-            <StoryCard story={story} ref={ref} viewCommentOption />
+            <StoryCard
+              story={story}
+              upvoteStory={upvoteStory}
+              downvoteStory={downvoteStory}
+              ref={ref}
+              pageIndex={pageIndex}
+              refetch={refetch}
+              viewCommentOption
+            />
           ) : (
-            <StoryCard story={story} viewCommentOption />
+            <StoryCard
+              pageIndex={pageIndex}
+              refetch={refetch}
+              story={story}
+              upvoteStory={upvoteStory}
+              downvoteStory={downvoteStory}
+              viewCommentOption
+            />
           )}
         </Box>
       )),

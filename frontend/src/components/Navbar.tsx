@@ -11,6 +11,12 @@ import Button from '@mui/material/Button';
 import Tooltip from '@mui/material/Tooltip';
 import MenuItem from '@mui/material/MenuItem';
 import { Link, useNavigate } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
+import { useMutation } from 'react-query';
+import axios from 'axios';
+import { LoadingButton } from '@mui/lab';
+import { RootState } from '../app/store';
+import { updateLoginStatus } from '../features/auth/authSlice';
 
 const pages = ['Trending', 'LeaderBoard', 'Engagement'];
 
@@ -18,7 +24,20 @@ function Navbar() {
   const [anchorElNav, setAnchorElNav] = React.useState<null | HTMLElement>(null);
   const [anchorElUser, setAnchorElUser] = React.useState<null | HTMLElement>(null);
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const userDetail = useSelector((state: RootState) => state.user);
 
+  const logoutMutation = useMutation(() =>
+    axios({ url: 'http://localhost:5000/api/v1/auth/logout', method: 'POST', withCredentials: true }),
+  );
+  React.useEffect(() => {
+    if (logoutMutation.isSuccess) {
+      dispatch(updateLoginStatus(false));
+    }
+  }, [logoutMutation, dispatch]);
+  const handleLogout = () => {
+    logoutMutation.mutate();
+  };
   const handleOpenNavMenu = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorElNav(event.currentTarget);
   };
@@ -124,7 +143,10 @@ function Navbar() {
           <Box sx={{ flexGrow: 0 }}>
             <Tooltip title="Open settings">
               <IconButton onClick={handleOpenUserMenu} sx={{ p: 0 }}>
-                <Avatar alt="Remy Sharp" src="/static/images/avatar/2.jpg" />
+                <Avatar
+                  alt={userDetail.username}
+                  src={`http://localhost:5000/public/profile/${userDetail.profilepic}`}
+                />
               </IconButton>
             </Tooltip>
             <Menu
@@ -181,7 +203,9 @@ function Navbar() {
                 <Typography textAlign="center">Engagement</Typography>
               </MenuItem>
               <MenuItem>
-                <Typography textAlign="center">Logout</Typography>
+                <LoadingButton onClick={handleLogout} loading={logoutMutation.isLoading} variant="text">
+                  Logout
+                </LoadingButton>
               </MenuItem>
             </Menu>
           </Box>

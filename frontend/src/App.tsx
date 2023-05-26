@@ -2,6 +2,8 @@ import { Route, Routes } from 'react-router-dom';
 import './App.css';
 import axios from 'axios';
 import { useQuery } from 'react-query';
+import { useDispatch, useSelector } from 'react-redux';
+import { useEffect } from 'react';
 import Landing from './pages/Landing';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -14,13 +16,27 @@ import LeaderBoard from './pages/LeaderBoard';
 import Engagement from './pages/Engagement';
 import PersonalStories from './pages/PersonalStories';
 import EditStory from './pages/EditStory';
+import { RootState } from './app/store';
+import { updateUserState } from './features/user/userSlice';
 
 function App() {
-  const getUserDetail = () => {
+  const isLoggedIn = useSelector((state: RootState) => state.auth.isLoggedIn);
+  const dispatch = useDispatch();
+  const getUserDetail = () =>
     axios.get('http://localhost:5000/api/v1/auth/me', { withCredentials: true }).then((response) => response.data);
-  };
-  // const query = useQuery('userDetail', getUserDetail);
-  // console.log(query);
+
+  const query = useQuery('userDetail', getUserDetail, {
+    enabled: isLoggedIn,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    staleTime: Infinity,
+  });
+  useEffect(() => {
+    if (query.isSuccess) {
+      dispatch(updateUserState(query.data.userDetail));
+    }
+  }, [query.isSuccess, dispatch, query.data]);
+
   return (
     <div className="App">
       <Routes>

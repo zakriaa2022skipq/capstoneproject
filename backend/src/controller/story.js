@@ -36,10 +36,11 @@ const updateStory = asyncHandler(async (req, res) => {
   if (req.files?.video) {
     const video = req.files.video[0].filename;
     story["video"] = video;
-  }
-  if (req.files?.image) {
+    story["image"] = null;
+  } else if (req.files?.image) {
     const image = req.files.image[0].filename;
     story["image"] = image;
+    story["video"] = null;
   }
   const newStory = await Story.findOneAndUpdate(
     { userId, _id: storyId },
