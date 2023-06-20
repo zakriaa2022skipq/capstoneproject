@@ -8,6 +8,12 @@ const ObjectId = mongoose.Types.ObjectId;
 const getTrendingStories = asyncHandler(async (req, res) => {
   const docsPerPage = parseInt(req.query.limit) || 10;
   const currentPage = parseInt(req.query.page) || 0;
+  const userId = req.user;
+  let sortBy = req.query.sort;
+  let sortAccepedVal = new Set(["upvoteCount", "downvoteCount", "createdAt"]);
+  if (!sortAccepedVal.has(sortBy)) {
+    sortBy = "createdAt";
+  }
 
   const stories = await Story.aggregate([
     { $match: { isPublic: true } },
@@ -16,6 +22,12 @@ const getTrendingStories = asyncHandler(async (req, res) => {
         commentCount: { $size: { $ifNull: ["$comments", []] } },
         upvoteCount: { $size: { $ifNull: ["$upvotes", []] } },
         downvoteCount: { $size: { $ifNull: ["$downvotes", []] } },
+        hasUpvoted: {
+          $in: [new ObjectId(userId), { $ifNull: ["$upvotes.user", []] }],
+        },
+        hasDownvoted: {
+          $in: [new ObjectId(userId), { $ifNull: ["$downvotes.user", []] }],
+        },
       },
     },
     {
@@ -25,19 +37,76 @@ const getTrendingStories = asyncHandler(async (req, res) => {
         comments: 0,
       },
     },
-    { $sort: { upvoteCount: -1, commentCount: -1, _id: 1 } },
+    { $sort: { [sortBy]: -1, commentCount: -1, _id: 1 } },
     { $skip: docsPerPage * currentPage },
     { $limit: docsPerPage },
     {
       $lookup: {
         from: "users",
-        pipeline: [{ $project: { username: 1, _id: 0, profilepic: 1 } }],
         localField: "userId",
         foreignField: "_id",
         as: "author",
       },
     },
     { $unwind: "$author" },
+    {
+      $lookup: {
+        from: "users",
+        pipeline: [
+          { $count: "totalUsers" },
+          {
+            $unwind: "$totalUsers",
+          },
+        ],
+        as: "totalUsers",
+      },
+    },
+    {
+      $lookup: {
+        from: "users",
+        let: { author_id: "$author._id" },
+        pipeline: [
+          {
+            $match: {
+              $expr: {
+                $eq: [new ObjectId(userId), "$_id"],
+              },
+            },
+          },
+          {
+            $addFields: {
+              isFollowing: {
+                $in: ["$$author_id", { $ifNull: ["$following.user", []] }],
+              },
+            },
+          },
+        ],
+        as: "followingAuthor",
+      },
+    },
+    {
+      $project: {
+        "author.name": 1,
+        "author.username": 1,
+        "author.profilepic": 1,
+        video: 1,
+        image: 1,
+        text: 1,
+        isPublic: 1,
+        createdAt: 1,
+        updatedAt: 1,
+        commentCount: 1,
+        upvoteCount: 1,
+        downvoteCount: 1,
+        hasUpvoted: 1,
+        hasDownvoted: 1,
+        totalUsers: { $arrayElemAt: ["$totalUsers.totalUsers", 0] },
+        isFollowingAuthor: {
+          $arrayElemAt: ["$followingAuthor.isFollowing", 0],
+        },
+        style: 1,
+      },
+    },
   ]);
   return res.status(200).json({ stories });
 });
@@ -54,32 +123,37 @@ const getEngagementStories = asyncHandler(async (req, res, next) => {
   const stories = await Story.aggregate([
     {
       $match: {
-        $or: [
-          { "downvotes.user": new ObjectId(userId) },
-          { "upvotes.user": new ObjectId(userId) },
-          { _id: { $in: mappedIds } },
+        $and: [
+          { isPublic: true },
           {
-            $and: [
+            $or: [
+              { "downvotes.user": new ObjectId(userId) },
+              { "upvotes.user": new ObjectId(userId) },
+              { _id: { $in: mappedIds } },
               {
-                $or: [
+                $and: [
                   {
-                    $expr: {
-                      $gt: [{ $size: { $ifNull: ["$comments", []] } }, 0],
-                    },
+                    $or: [
+                      {
+                        $expr: {
+                          $gt: [{ $size: { $ifNull: ["$comments", []] } }, 0],
+                        },
+                      },
+                      {
+                        $expr: {
+                          $gt: [{ $size: { $ifNull: ["$upvotes", []] } }, 0],
+                        },
+                      },
+                      {
+                        $expr: {
+                          $gt: [{ $size: { $ifNull: ["$downvotes", []] } }, 0],
+                        },
+                      },
+                    ],
                   },
-                  {
-                    $expr: {
-                      $gt: [{ $size: { $ifNull: ["$upvotes", []] } }, 0],
-                    },
-                  },
-                  {
-                    $expr: {
-                      $gt: [{ $size: { $ifNull: ["$downvotes", []] } }, 0],
-                    },
-                  },
+                  { userId: new ObjectId(userId) },
                 ],
               },
-              { userId: new ObjectId(userId) },
             ],
           },
         ],
@@ -90,6 +164,12 @@ const getEngagementStories = asyncHandler(async (req, res, next) => {
         commentCount: { $size: { $ifNull: ["$comments", []] } },
         upvoteCount: { $size: { $ifNull: ["$upvotes", []] } },
         downvoteCount: { $size: { $ifNull: ["$downvotes", []] } },
+        hasUpvoted: {
+          $in: [new ObjectId(userId), { $ifNull: ["$upvotes.user", []] }],
+        },
+        hasDownvoted: {
+          $in: [new ObjectId(userId), { $ifNull: ["$downvotes.user", []] }],
+        },
       },
     },
     {
@@ -104,13 +184,70 @@ const getEngagementStories = asyncHandler(async (req, res, next) => {
     {
       $lookup: {
         from: "users",
-        pipeline: [{ $project: { username: 1, _id: 0, profilepic: 1 } }],
         localField: "userId",
         foreignField: "_id",
         as: "author",
       },
     },
     { $unwind: "$author" },
+    {
+      $lookup: {
+        from: "users",
+        pipeline: [
+          { $count: "totalUsers" },
+          {
+            $unwind: "$totalUsers",
+          },
+        ],
+        as: "totalUsers",
+      },
+    },
+    {
+      $lookup: {
+        from: "users",
+        let: { author_id: "$author._id" },
+        pipeline: [
+          {
+            $match: {
+              $expr: {
+                $eq: [new ObjectId(userId), "$_id"],
+              },
+            },
+          },
+          {
+            $addFields: {
+              isFollowing: {
+                $in: ["$$author_id", { $ifNull: ["$following.user", []] }],
+              },
+            },
+          },
+        ],
+        as: "followingAuthor",
+      },
+    },
+    {
+      $project: {
+        "author.name": 1,
+        "author.username": 1,
+        "author.profilepic": 1,
+        video: 1,
+        image: 1,
+        text: 1,
+        isPublic: 1,
+        createdAt: 1,
+        updatedAt: 1,
+        commentCount: 1,
+        upvoteCount: 1,
+        downvoteCount: 1,
+        hasUpvoted: 1,
+        hasDownvoted: 1,
+        totalUsers: { $arrayElemAt: ["$totalUsers.totalUsers", 0] },
+        isFollowingAuthor: {
+          $arrayElemAt: ["$followingAuthor.isFollowing", 0],
+        },
+        style: 1,
+      },
+    },
   ]);
   res.status(200).json({ stories });
 });
@@ -185,24 +322,21 @@ const getTimelineStories = asyncHandler(async (req, res) => {
               commentCount: { $size: { $ifNull: ["$comments", []] } },
               upvoteCount: { $size: { $ifNull: ["$upvotes", []] } },
               downvoteCount: { $size: { $ifNull: ["$downvotes", []] } },
+              hasUpvoted: {
+                $in: [new ObjectId(userId), { $ifNull: ["$upvotes.user", []] }],
+              },
+              hasDownvoted: {
+                $in: [
+                  new ObjectId(userId),
+                  { $ifNull: ["$downvotes.user", []] },
+                ],
+              },
+              isFollowingAuthor: true,
             },
           },
           { $sort: { [sortBy]: -1, commentCount: -1, _id: 1 } },
           { $skip: docsPerPage * currentPage },
           { $limit: docsPerPage },
-          {
-            $project: {
-              video: 1,
-              image: 1,
-              text: 1,
-              isPublic: 1,
-              userId: 1,
-              commentCount: 1,
-              upvoteCount: 1,
-              downvoteCount: 1,
-              createdAt: 1,
-            },
-          },
         ],
         localField: "following.user",
         foreignField: "userId",
@@ -221,6 +355,18 @@ const getTimelineStories = asyncHandler(async (req, res) => {
     { $unwind: "$author" },
     { $replaceRoot: { newRoot: { $mergeObjects: ["$$ROOT", "$story"] } } },
     {
+      $lookup: {
+        from: "users",
+        pipeline: [
+          { $count: "totalUsers" },
+          {
+            $unwind: "$totalUsers",
+          },
+        ],
+        as: "totalUsers",
+      },
+    },
+    {
       $project: {
         "author.name": 1,
         "author.username": 1,
@@ -234,6 +380,11 @@ const getTimelineStories = asyncHandler(async (req, res) => {
         commentCount: 1,
         upvoteCount: 1,
         downvoteCount: 1,
+        hasUpvoted: 1,
+        hasDownvoted: 1,
+        totalUsers: { $arrayElemAt: ["$totalUsers.totalUsers", 0] },
+        isFollowingAuthor: 1,
+        style: 1,
       },
     },
   ]);
@@ -255,6 +406,13 @@ const getAllUserStories = asyncHandler(async (req, res) => {
         commentCount: { $size: { $ifNull: ["$comments", []] } },
         upvoteCount: { $size: { $ifNull: ["$upvotes", []] } },
         downvoteCount: { $size: { $ifNull: ["$downvotes", []] } },
+        hasUpvoted: {
+          $in: [new ObjectId(userId), { $ifNull: ["$upvotes.user", []] }],
+        },
+        hasDownvoted: {
+          $in: [new ObjectId(userId), { $ifNull: ["$downvotes.user", []] }],
+        },
+        isFollowingAuthor: false,
       },
     },
     {
@@ -270,13 +428,45 @@ const getAllUserStories = asyncHandler(async (req, res) => {
     {
       $lookup: {
         from: "users",
-        pipeline: [{ $project: { username: 1, _id: 0, profilepic: 1 } }],
         localField: "userId",
         foreignField: "_id",
         as: "author",
       },
     },
     { $unwind: "$author" },
+    {
+      $lookup: {
+        from: "users",
+        pipeline: [
+          { $count: "totalUsers" },
+          {
+            $unwind: "$totalUsers",
+          },
+        ],
+        as: "totalUsers",
+      },
+    },
+    {
+      $project: {
+        "author.name": 1,
+        "author.username": 1,
+        "author.profilepic": 1,
+        video: 1,
+        image: 1,
+        text: 1,
+        isPublic: 1,
+        createdAt: 1,
+        updatedAt: 1,
+        commentCount: 1,
+        upvoteCount: 1,
+        downvoteCount: 1,
+        hasUpvoted: 1,
+        hasDownvoted: 1,
+        totalUsers: { $arrayElemAt: ["$totalUsers.totalUsers", 0] },
+        isFollowingAuthor: 1,
+        style: 1,
+      },
+    },
   ]);
   return res.status(200).json({ stories });
 });

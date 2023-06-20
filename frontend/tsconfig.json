@@ -16,6 +16,7 @@
     "noEmit": true,
     "jsx": "react-jsx"
   },
-  "include": ["src", ".eslintrc.cjs"],
-  "references": [{ "path": "./tsconfig.node.json" }]
+  "include": ["src", ".eslintrc.cjs", "jest-setup.ts", "babel.config.cjs", "mocks", "vite.config.ts", "typings.d.ts"],
+  "references": [{ "path": "./tsconfig.node.json" }],
+  "types": ["node"]
 }

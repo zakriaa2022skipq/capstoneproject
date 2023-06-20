@@ -3,6 +3,7 @@ const {
   createStory,
   deleteStory,
   updateStory,
+  storyDetail,
 } = require("../controller/story");
 const { upvoteStory, downvoteStory } = require("../controller/vote");
 const {
@@ -20,6 +21,14 @@ const {
 } = require("../controller/trending");
 const authMiddleware = require("../middleware/auth");
 const { uploadStory } = require("../middleware/fileupload");
+const {
+  createStorySchema,
+  editStorySchema,
+} = require("../validation/storyValidation");
+const {
+  createCommentSchema,
+  editCommentSchema,
+} = require("../validation/commentValidation");
 
 const router = express.Router();
 router.route("/all").get(authMiddleware, getAllUserStories);
@@ -29,6 +38,7 @@ router.route("/").post(
     { name: "video", maxCount: 1 },
     { name: "image", maxCount: 1 },
   ]),
+  createStorySchema,
   createStory
 );
 router
@@ -39,6 +49,7 @@ router
       { name: "video", maxCount: 1 },
       { name: "image", maxCount: 1 },
     ]),
+    editStorySchema,
     updateStory
   )
   .delete(authMiddleware, deleteStory);
@@ -48,8 +59,10 @@ router.route("/:storyId/downvote").patch(authMiddleware, downvoteStory);
 router
   .route("/:storyId/comment")
   .get(authMiddleware, storyComments)
-  .put(authMiddleware, createComment);
-router.route("/:storyId/comment/:commentId").put(authMiddleware, updateComment);
+  .put(authMiddleware, createCommentSchema, createComment);
+router
+  .route("/:storyId/comment/:commentId")
+  .put(authMiddleware, editCommentSchema, updateComment);
 router
   .route("/:storyId/comment/:commentId")
   .delete(authMiddleware, deleteComment);
@@ -59,4 +72,5 @@ router.route("/engagement").get(authMiddleware, getEngagementStories);
 router.route("/leaderboard").get(authMiddleware, getLeaderboard);
 router.route("/timeline").get(authMiddleware, getTimelineStories);
 
+router.route("/detail/:storyId").get(authMiddleware, storyDetail);
 module.exports = router;

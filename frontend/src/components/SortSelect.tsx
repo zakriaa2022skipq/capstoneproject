@@ -13,12 +13,11 @@ function SortSelect({ sort, setSort }: { sort: string; setSort: React.Dispatch<R
         Sort
       </InputLabel>
       <Select
-        labelId="sort"
         id="sort"
         value={sort}
-        label="Age"
+        label="sort"
         onChange={handleChange}
-        sx={{ height: '35px', fontSize: '12px' }}
+        sx={{ height: '35px', fontSize: '12px', color: 'hsl(169, 79%, 48%)' }}
       >
         <MenuItem value="createdAt" sx={{ fontSize: '12px' }}>
           Time

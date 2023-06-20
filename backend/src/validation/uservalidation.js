@@ -29,4 +29,4 @@ const validateRequest = async (req, next, schema) => {
   }
 };
 
-module.exports = { registerUserSchema, loginUserSchema };
+module.exports = { registerUserSchema, loginUserSchema, validateRequest };

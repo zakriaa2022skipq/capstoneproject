@@ -8,21 +8,23 @@ const createComment = asyncHandler(async (req, res, next) => {
   const userId = req.user;
   const storyId = req.params.storyId;
   const { text } = req.body;
-  // const comment = await Comment.updateOne(
-  //   {
-  //     userId,
-  //     storyId,
-  //   },
-  //   { userId, storyId, text },
-  //   { upsert: true }
-  // );
-  const comment = await Comment.create({
-    userId,
-    storyId,
-    text,
-  });
+  const story = await Story.findOne({ _id: new ObjectId(storyId) });
+
+  if (story.isPublic === false && story.userId.toString() !== userId) {
+    req.statusCode = 400;
+    throw new Error("Cannot add comment to private story");
+  }
+  const comment = await Comment.updateOne(
+    {
+      userId,
+      storyId,
+    },
+    { userId, storyId, text },
+    { upsert: true }
+  );
+
   const commentId = comment._id;
-  const story = await Story.updateOne(
+  const storyUpdated = await Story.updateOne(
     { _id: storyId },
     {
       $addToSet: { comments: { _id: commentId } },
@@ -74,6 +76,12 @@ const storyComments = asyncHandler(async (req, res) => {
   const userId = req.user;
   const docsPerPage = parseInt(req.query.limit) || 10;
   const currentPage = parseInt(req.query.page) || 0;
+  const story = await Story.findOne({ _id: new ObjectId(storyId) });
+
+  if (story.isPublic === false && story.userId.toString() !== userId) {
+    req.statusCode = 400;
+    throw new Error("Cannot access private story comments");
+  }
   const comments = await Comment.aggregate([
     { $match: { storyId: new ObjectId(storyId) } },
     { $sort: { createdAt: -1, _id: 1 } },

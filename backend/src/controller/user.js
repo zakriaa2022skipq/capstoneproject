@@ -39,5 +39,12 @@ const userDetail = asyncHandler(async (req, res) => {
   ]);
   return res.status(200).json({ userDetail });
 });
+const updateUser = asyncHandler(async (req, res) => {
+  const userDetail = await User.findById(req.user).select([
+    "-password",
+    "-following",
+  ]);
+  return res.status(200).json({ userDetail });
+});
 
-module.exports = { registerUser, logoutUser, userDetail };
+module.exports = { registerUser, logoutUser, userDetail, updateUser };

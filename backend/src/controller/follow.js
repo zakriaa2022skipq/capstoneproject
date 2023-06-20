@@ -1,5 +1,7 @@
 const User = require("../models/user");
 const asyncHandler = require("express-async-handler");
+const mongoose = require("mongoose");
+const ObjectId = mongoose.Types.ObjectId;
 
 const followUser = asyncHandler(async (req, res, next) => {
   const userId = req.user;
@@ -43,5 +45,22 @@ const unfollowUser = asyncHandler(async (req, res) => {
   );
   return res.status(200).json({ msg: "follow removed" });
 });
+const getFollowingList = asyncHandler(async (req, res) => {
+  const userId = req.user;
+  const docsPerPage = parseInt(req.query.limit) || 10;
+  const currentPage = parseInt(req.query.page) || 0;
+  const users = await User.aggregate([
+    { $match: { _id: new ObjectId(userId) } },
+    {
+      $lookup: {
+        from: "users",
+        localField: "following.user",
+        foreignField: "_id",
+        as: "following",
+      },
+    },
+  ]);
+  return res.status(200).json({ followlist: users });
+});
 
-module.exports = { unfollowUser, followUser };
+module.exports = { unfollowUser, followUser, getFollowingList };

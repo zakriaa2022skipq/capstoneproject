@@ -1,41 +1,38 @@
+import { useQuery } from 'react-query';
+import { useDispatch } from 'react-redux';
 import { Route, Routes } from 'react-router-dom';
 import './App.css';
-import axios from 'axios';
-import { useQuery } from 'react-query';
-import { useDispatch, useSelector } from 'react-redux';
-import { useEffect } from 'react';
-import Landing from './pages/Landing';
-import Login from './pages/Login';
-import Register from './pages/Register';
-import Home from './pages/Home';
 import PrivateRoutes from './components/PrivateRoute';
+import { updateLoginStatus } from './features/auth/authSlice';
+import { updateUserState } from './features/user/userSlice';
 import CreateStory from './pages/CreateStory';
+import EditStory from './pages/EditStory';
+import Engagement from './pages/Engagement';
+import Home from './pages/Home';
+import Landing from './pages/Landing';
+import LeaderBoard from './pages/LeaderBoard';
+import Login from './pages/Login';
+import PersonalStories from './pages/PersonalStories';
+import Register from './pages/Register';
 import StoryDetail from './pages/StoryDetail';
 import Trending from './pages/Trending';
-import LeaderBoard from './pages/LeaderBoard';
-import Engagement from './pages/Engagement';
-import PersonalStories from './pages/PersonalStories';
-import EditStory from './pages/EditStory';
-import { RootState } from './app/store';
-import { updateUserState } from './features/user/userSlice';
+import axios from './utils/axios';
+import CatchAll from './components/CatchAll';
 
 function App() {
-  const isLoggedIn = useSelector((state: RootState) => state.auth.isLoggedIn);
   const dispatch = useDispatch();
-  const getUserDetail = () =>
-    axios.get('http://localhost:5000/api/v1/auth/me', { withCredentials: true }).then((response) => response.data);
+  const getUserDetail = () => axios.get('api/v1/auth/me', { withCredentials: true }).then((response) => response.data);
 
   const query = useQuery('userDetail', getUserDetail, {
-    enabled: isLoggedIn,
     refetchOnWindowFocus: false,
     refetchOnMount: false,
     staleTime: Infinity,
+    retry: false,
+    onSuccess: (data) => {
+      dispatch(updateLoginStatus(true));
+      dispatch(updateUserState(data.userDetail));
+    },
   });
-  useEffect(() => {
-    if (query.isSuccess) {
-      dispatch(updateUserState(query.data.userDetail));
-    }
-  }, [query.isSuccess, dispatch, query.data]);
 
   return (
     <div className="App">
@@ -53,6 +50,7 @@ function App() {
         <Route path="/" element={<Landing />} />
         <Route path="/signin" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="*" element={<CatchAll />} />
       </Routes>
     </div>
   );

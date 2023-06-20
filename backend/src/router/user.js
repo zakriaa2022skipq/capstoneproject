@@ -1,8 +1,13 @@
 const express = require("express");
-const { registerUser } = require("../controller/user");
+const { registerUser, updateUser } = require("../controller/user");
 const { registerUserSchema } = require("../validation/uservalidation");
 const { uploadProfilePic } = require("../middleware/fileupload");
-const { followUser, unfollowUser } = require("../controller/follow");
+const {
+  followUser,
+  unfollowUser,
+  getFollowingList,
+} = require("../controller/follow");
+const authMiddleware = require("../middleware/auth");
 
 const router = express.Router();
 router
@@ -12,8 +17,10 @@ router
     registerUserSchema,
     registerUser
   );
+router.route("/edit").patch(updateUser);
 
-router.route("/:username/follow").post(followUser);
-router.route("/:username/unfollow").post(unfollowUser);
+router.route("/:username/follow").post(authMiddleware, followUser);
+router.route("/:username/unfollow").post(authMiddleware, unfollowUser);
+router.route("/following/all").get(authMiddleware, getFollowingList);
 
 module.exports = router;

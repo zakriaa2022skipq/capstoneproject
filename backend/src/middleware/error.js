@@ -1,7 +1,11 @@
 const errorMiddleware = (error, req, res, next) => {
   const statusCode = req.statusCode || 500;
-  console.log(error);
-  const message = error.message || "Something went wrong try again later!";
+  let message;
+  if (error.reason) {
+    message = "Something went wrong try again later!";
+  } else {
+    message = error.message || "Something went wrong try again later!";
+  }
   return res.status(statusCode).json(message);
 };
 

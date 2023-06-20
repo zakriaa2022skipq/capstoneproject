@@ -2,22 +2,31 @@ import * as Yup from 'yup';
 import { useFormik } from 'formik';
 import Box from '@mui/material/Box';
 import Modal from '@mui/material/Modal';
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Alert, AlertTitle, TextField } from '@mui/material';
 import { LoadingButton } from '@mui/lab';
-import { useMutation } from 'react-query';
-import axios from 'axios';
+import { InfiniteData, QueryObserverResult, RefetchOptions, RefetchQueryFilters, useMutation } from 'react-query';
+import { AxiosError } from 'axios';
+import axios from '../utils/axios';
 
 function CommentModal({
   addCommentModal,
   setAddCommentModal,
   storyId,
+  refetchAddComment,
+  refetchAddCommentArg,
 }: {
   addCommentModal: boolean;
   setAddCommentModal: React.Dispatch<React.SetStateAction<boolean>>;
   storyId: string;
+  refetchAddComment?:
+    | (<TPageData>(
+        options?: (RefetchOptions & RefetchQueryFilters<TPageData>) | undefined,
+      ) => Promise<QueryObserverResult<InfiniteData<any>, unknown>>)
+    | undefined;
+  refetchAddCommentArg?: object;
 }) {
-  const handleOpen = () => setAddCommentModal(true);
+  // const handleOpen = () => setAddCommentModal(true);
   const handleClose = () => setAddCommentModal(false);
 
   const style = {
@@ -36,27 +45,40 @@ function CommentModal({
   const [showAlert, setShowAlert] = useState(false);
   const [errMessage, setErrMessage] = useState('');
   const CommentSchema = Yup.object().shape({
-    comment: Yup.string().min(2, 'Too Short!').max(400, 'Too Long!').required('Required'),
+    comment: Yup.string()
+      .min(2, 'Too Short!')
+      .max(50, 'Comment cannot exceed 50 char limit. Too Long!')
+      .required('Required'),
   });
-  const commentMutation = useMutation((commentBody: { text: string }) =>
-    axios.put(`http://localhost:5000/api/v1/story/${storyId}/comment`, commentBody, { withCredentials: true }),
+  const commentMutation = useMutation(
+    (commentBody: { text: string }) =>
+      axios.put(`api/v1/story/${storyId}/comment`, commentBody, { withCredentials: true }),
+    {
+      onSuccess: () => {
+        if (refetchAddComment && refetchAddCommentArg) {
+          refetchAddComment(refetchAddCommentArg);
+        } else if (refetchAddComment) {
+          refetchAddComment();
+        }
+
+        setAddCommentModal(false);
+      },
+      onError: (error: AxiosError) => {
+        setShowAlert(true);
+        if (error.response) {
+          if (typeof error.response.data === 'string') setErrMessage(error.response.data);
+        } else if (error.request) {
+          setErrMessage(error.message);
+        } else {
+          setErrMessage(error.message);
+        }
+      },
+    },
   );
   const handleSubmit = async (values: { comment: string }) => {
     commentMutation.mutate({ text: values.comment });
   };
-  useEffect(() => {
-    if (commentMutation.isSuccess) {
-      setAddCommentModal(false);
-    }
-  }, [commentMutation.isSuccess, setAddCommentModal]);
-  useEffect(() => {
-    if (commentMutation.isError) {
-      setShowAlert(true);
-      if (typeof commentMutation.error === 'object') {
-        setErrMessage(commentMutation.error?.response?.data);
-      }
-    }
-  }, [commentMutation.isError, commentMutation.error]);
+
   const formik = useFormik({
     initialValues: {
       comment: '',
@@ -103,7 +125,19 @@ function CommentModal({
             type="submit"
             variant="outlined"
             disabled={formik.isSubmitting}
-            sx={{ mt: '12px', width: 'max-content' }}
+            sx={{
+              mt: '12px',
+              width: 'max-content',
+              color: 'hsl(169, 75%, 50%)',
+              borderColor: 'hsl(169, 79%, 48%)',
+              ':hover': {
+                borderColor: 'hsl(169, 79%, 48%)',
+                backgroundColor: 'tranparent',
+              },
+              '.MuiLoadingButton-loadingIndicator': {
+                color: 'hsl(169, 79%, 48%)',
+              },
+            }}
           >
             <span>Comment</span>
           </LoadingButton>
@@ -112,4 +146,9 @@ function CommentModal({
     </div>
   );
 }
+CommentModal.defaultProps = {
+  refetchAddComment: undefined,
+  refetchAddCommentArg: undefined,
+};
+
 export default CommentModal;

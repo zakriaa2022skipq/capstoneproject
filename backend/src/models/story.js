@@ -56,6 +56,14 @@ const storySchema = mongoose.Schema(
         },
       ],
     },
+    style: {
+      color: {
+        type: String,
+        maxLength: [20, "Color value must be under 20 chars"],
+        trim: true,
+        default: null,
+      },
+    },
   },
   { timestamps: true }
 );
