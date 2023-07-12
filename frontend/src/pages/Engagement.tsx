@@ -20,6 +20,7 @@ import Navbar from '../components/Navbar';
 import StoryCard, { Story } from '../components/StoryCard';
 import axios from '../utils/axios';
 import styles from './grid.module.css';
+import SortSelect from '../components/SortSelect';
 
 function Engagement() {
   const storyLimit = 5;

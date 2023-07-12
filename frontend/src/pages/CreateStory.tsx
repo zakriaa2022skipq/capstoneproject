@@ -133,6 +133,7 @@ function CreateStory() {
               inset: '0',
               backgroundColor: styleChoice === 'color' ? formik.values.color : '',
               opacity: '0.4',
+              pointerEvents: 'none',
             }}
           />
           {showAlert && (
