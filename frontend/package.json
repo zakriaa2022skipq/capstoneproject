@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc --project tsconfig.build.json && vite build",
+    "build": "NODE_OPTIONS='--max-old-space-size=750' tsc --project tsconfig.build.json && NODE_OPTIONS='--max-old-space-size=750' vite build",
     "preview": "vite preview",
     "lint": "eslint . --ext .ts,.tsx",
     "test": "jest"

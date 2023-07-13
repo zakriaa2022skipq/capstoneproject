@@ -132,7 +132,7 @@ function CreateStory() {
               position: 'absolute',
               inset: '0',
               backgroundColor: styleChoice === 'color' ? formik.values.color : '',
-              opacity: '0.4',
+              opacity: (styleChoice === 'color') !== null ? '0.4' : '0',
               pointerEvents: 'none',
             }}
           />

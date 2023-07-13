@@ -112,7 +112,7 @@ function Home() {
 
       <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
         <SortSelect sort={sort} setSort={setSort} />
-        {isSuccess && stories && stories.length > 1 && (
+        {isSuccess && stories && stories.length >= 1 && stories[0].length > 1 && (
           <>
             <IconButton
               sx={{ color: displayList === true ? '' : 'Highlight' }}

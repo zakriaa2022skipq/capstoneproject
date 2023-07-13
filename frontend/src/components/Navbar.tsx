@@ -150,7 +150,9 @@ function Navbar() {
                   alt={userDetail?.username ?? 'username'}
                   src={
                     userDetail?.profilepic !== null
-                      ? `http://localhost:5000/public/profile/${userDetail.profilepic}`
+                      ? `${process.env.environment === 'development' ? process.env.SERVER_URL : ''}/public/profile/${
+                          userDetail.profilepic
+                        }`
                       : ''
                   }
                 />

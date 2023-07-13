@@ -69,7 +69,9 @@ function LeaderBoard() {
                 width="75px"
                 height="100px"
                 style={{ display: 'block', margin: '0 auto' }}
-                src={`http://localhost:5000/public/profile/${leader.user.profilepic}`}
+                src={`${process.env.environment === 'development' ? process.env.SERVER_URL : ''}/public/profile/${
+                  leader.user.profilepic
+                }`}
                 alt={leader.user.name}
               />
             )}

@@ -151,7 +151,7 @@ function EditStory() {
               position: 'absolute',
               inset: '0',
               backgroundColor: styleChoice === 'color' ? formik.values.color : '',
-              opacity: '0.4',
+              opacity: styleChoice === 'color' ? '0.4' : '0',
               pointerEvents: 'none',
             }}
           />

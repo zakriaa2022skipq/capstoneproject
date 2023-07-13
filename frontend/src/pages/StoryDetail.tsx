@@ -39,7 +39,7 @@ function StoryDetail() {
   const commentLimit = 10;
   const fetchComments = (pageParam: number) =>
     axios
-      .get(`http://localhost:5000/api/v1/story/${storyId}/comment/?limit=${commentLimit}&page=${pageParam}`, {
+      .get(`api/v1/story/${storyId}/comment/?limit=${commentLimit}&page=${pageParam}`, {
         withCredentials: true,
       })
       .then((response) => response.data.comments);

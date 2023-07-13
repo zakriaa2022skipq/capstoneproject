@@ -151,14 +151,16 @@ const StoryCard = forwardRef(
               position: 'absolute',
               inset: '0',
               backgroundColor: story?.style?.color !== null ? story?.style?.color : 'hsl(185, 10%, 95%)',
-              opacity: '0.4',
+              opacity: story?.style?.color !== null ? '0.4' : '0',
             }}
           />
           <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
             <CardHeader
               avatar={
                 <Avatar
-                  src={`http://localhost:5000/public/profile/${story.author.profilepic}`}
+                  src={`${process.env.environment === 'development' ? process.env.SERVER_URL : ''}/public/profile/${
+                    story.author.profilepic
+                  }`}
                   sx={{ bgcolor: red[500] }}
                   aria-label={story.author.username}
                 >
@@ -181,7 +183,7 @@ const StoryCard = forwardRef(
             <CardMedia
               component="img"
               height="194"
-              image={`http://localhost:5000/public/story/${story.image}`}
+              image={`/public/story/${story.image}`}
               alt="story"
               sx={{ mx: 'auto' }}
             />
@@ -190,7 +192,9 @@ const StoryCard = forwardRef(
             <CardMedia
               component="video"
               controls
-              src={`http://localhost:5000/public/story/${story.video}`}
+              src={`${process.env.environment === 'development' ? process.env.SERVER_URL : ''}/public/story/${
+                story.video
+              }`}
               height="194"
               sx={{ mx: 'auto' }}
             />

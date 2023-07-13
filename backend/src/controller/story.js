@@ -74,7 +74,7 @@ const deleteStory = asyncHandler(async (req, res, next) => {
         );
       } catch (error) {
         req.statusCode = 500;
-        throw new Error("Error occured while trying to remvove file");
+        throw new Error("Error occured while trying to remove file");
       }
     }
     if (story.video) {
@@ -85,7 +85,7 @@ const deleteStory = asyncHandler(async (req, res, next) => {
       } catch (error) {
         console.log(error);
         req.statusCode = 500;
-        throw new Error("Error occured while trying to remvove file");
+        throw new Error("Error occured while trying to remove file");
       }
     }
     return res.status(200).json({ msg: "story deleted successfully" });

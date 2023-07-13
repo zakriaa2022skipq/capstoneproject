@@ -48,7 +48,12 @@ function Comment({ comment, refetch }: Props) {
       <Box sx={{ display: 'flex', alignItems: 'center', gap: '8px', mb: '8px' }}>
         <Avatar
           sx={{ width: '30px', height: '30px' }}
-          src={comment.author.profilepic && `http://localhost:5000/public/profile/${comment.author.profilepic}`}
+          src={
+            comment.author.profilepic &&
+            `${process.env.environment === 'development' ? process.env.SERVER_URL : ''}/public/profile/${
+              comment.author.profilepic
+            }`
+          }
         />
         <Typography sx={{ fontSize: '16px' }}>{comment.author.username}</Typography>
         <Typography sx={{ fontSize: '9px' }}>{commentDate}</Typography>
